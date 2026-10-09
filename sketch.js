@@ -39,6 +39,8 @@ const BAD_GUIDE = [
   ['snow', 'Snow', 'Freeze']
 ];
 
+const GAME_W = 800;
+const GAME_H = 600;
 const MOUTH_OPEN_AT = 0.34;
 const MOUTH_CLOSE_AT = 0.2;
 let camVideo = null;
@@ -82,38 +84,54 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(800, 600);
+  createCanvas(windowWidth, windowHeight);
   textFont('PingFang SC');
   bigFishX = 0;
-  bigFishY = random(height - 150);
-  smallFishX = random(width);
-  smallFishY = height * 3 / 4;
+  bigFishY = random(GAME_H - 150);
+  smallFishX = random(GAME_W);
+  smallFishY = GAME_H * 3 / 4;
   generateItems();
   backgroundMusic.loop();
   loadFaceLandmarker();
 }
 
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+
+function stageScale() {
+  return min(width / GAME_W, height / GAME_H);
+}
+
 function draw() {
   updateMouth();
+  imageMode(CORNER);
+  image(seaImg, 0, 0, width, height);
+  const s = stageScale();
+  const ox = (width - GAME_W * s) / 2;
+  const oy = (height - GAME_H * s) / 2;
+  push();
+  translate(ox, oy);
+  scale(s);
   if (!gamestart) {
     drawStartScreen();
   } else if (gameOver) {
     drawGameOverScreen();
   } else if (gameWon) {
-    drawWonScreen(); // 叠加显示胜利画面
+    drawWonScreen();
   } else if (showGuide) {
     drawPlayfield(false);
     drawGuideOverlay();
   } else {
     drawPlayfield(true);
   }
+  pop();
 }
 
 
 function drawStartScreen() {
-  image(seaImg, 0, 0, width, height);
   bigFishX += 2;
-  if (bigFishX > width + 150) {
+  if (bigFishX > GAME_W + 150) {
     bigFishX = -300;
   }
   push();
@@ -125,13 +143,12 @@ function drawStartScreen() {
   image(gogofishImg, bigFishX - 300, bigFishY - 20, 257, 50);
   fill(8, 32, 58, 45);
   noStroke();
-  rect(0, 0, width, height);
+  rect(0, 0, GAME_W, GAME_H);
   drawHowToPanel('start');
 }
 
 function drawPlayfield(simulate) {
   imageMode(CORNER);
-  image(seaImg, 0, 0, width, height);
   if (simulate) {
     if (freezeTimer > 0) {
       freezeTimer--;
@@ -144,12 +161,12 @@ function drawPlayfield(simulate) {
       bigFishSpeed = bigFishBaseSpeed * 1.5;
     }
     bigFishX -= bigFishSpeed * bigFishDirection;
-    if (bigFishX > width) {
+    if (bigFishX > GAME_W) {
       bigFishX = -300;
-      bigFishY = random(height - 150);
+      bigFishY = random(GAME_H - 150);
     } else if (bigFishX < -300) {
-      bigFishX = width;
-      bigFishY = random(height - 150);
+      bigFishX = GAME_W;
+      bigFishY = random(GAME_H - 150);
     }
   }
   push();
@@ -180,11 +197,10 @@ function drawPlayfield(simulate) {
 }
 
 function drawGameOverScreen() {
-  image(seaImg, 0, 0, width, height);
   fill(255);
-  image(gameoverImg, width / 2 - 155, height / 2 - 100, 310, 60);
-  image(restartImg, width / 2 - 75, height / 2 + 50, 150, 60);
-  restartBtn = { x: width / 2 - 75, y: height / 2 + 50, w: 150, h: 60 };
+  image(gameoverImg, GAME_W / 2 - 155, GAME_H / 2 - 100, 310, 60);
+  image(restartImg, GAME_W / 2 - 75, GAME_H / 2 + 50, 150, 60);
+  restartBtn = { x: GAME_W / 2 - 75, y: GAME_H / 2 + 50, w: 150, h: 60 };
   
   if (!loseSoundPlayed) { // 确保音效只播放一次
     loseSound.play();
@@ -204,12 +220,11 @@ function drawGameOverScreen() {
 }
 
 function drawWonScreen() {
-  image(seaImg, 0, 0, width, height);
   fill(255);
-  image(winImg, width / 2 - 155, height / 2 - 100, 310, 60);
+  image(winImg, GAME_W / 2 - 155, GAME_H / 2 - 100, 310, 60);
   //大鱼旋转效果
   {push();
-  translate(width / 2 - 200, height / 2); // 将大鱼移动到中心左侧
+  translate(GAME_W / 2 - 200, GAME_H / 2); // 将大鱼移动到中心左侧
   rotate(HALF_PI);
   rotate(frameCount * 0.02); // 持续旋转
   imageMode(CENTER);
@@ -218,7 +233,7 @@ function drawWonScreen() {
   }
   // 小鱼旋转效果
   {push();
-  translate(width / 2 + 200, height / 2); // 将小鱼移动到中心右侧
+  translate(GAME_W / 2 + 200, GAME_H / 2); // 将小鱼移动到中心右侧
   rotate(HALF_PI);
   rotate(-frameCount * 0.05); // 反方向旋转
   imageMode(CENTER);
@@ -227,12 +242,12 @@ function drawWonScreen() {
   }
   // 海星海草旋转效果
   {push();
-    translate(width /2, height/2-150); 
+    translate(GAME_W / 2, GAME_H / 2 - 150); 
     image(starImg, 0, 0, 80, 80); // 竖起展示
     pop();
     }
     {push();
-      translate(width - 250, height -200); 
+      translate(GAME_W - 250, GAME_H - 200); 
       image(shanhuImg, 0, 0, 280, 250); // 竖起展示
       pop();}
   // 确保胜利音效只播放一次
@@ -241,10 +256,10 @@ function drawWonScreen() {
     winSoundPlayed = true;
   }
   fill(255);
-  image(winImg, width / 2 - 155, height / 2 - 100, 310, 60);
+  image(winImg, GAME_W / 2 - 155, GAME_H / 2 - 100, 310, 60);
   // 显示重新开始按钮
-  image(restartImg, width / 2 - 75, height / 2 + 50, 150, 60);
-  restartBtn = { x: width / 2 - 75, y: height / 2 + 50, w: 150, h: 60 };
+  image(restartImg, GAME_W / 2 - 75, GAME_H / 2 + 50, 150, 60);
+  restartBtn = { x: GAME_W / 2 - 75, y: GAME_H / 2 + 50, w: 150, h: 60 };
 }
 
 
@@ -294,13 +309,13 @@ function restartGame() {
 function moveSmallFish() {
   smallFishX -= smallFishSpeed * cos(radians(smallFishAngle));
   smallFishY -= smallFishSpeed * sin(radians(smallFishAngle));
-  if (smallFishX > width) {
+  if (smallFishX > GAME_W) {
     smallFishX = 0;
-    smallFishY = random(height);
+    smallFishY = random(GAME_H);
   }
   if (smallFishX < 0) {
-    smallFishX = width;
-    smallFishY = random(height);
+    smallFishX = GAME_W;
+    smallFishY = random(GAME_H);
   }
 }
 
@@ -341,7 +356,7 @@ function generateItem() {
   else if (itemType === 'lightning') itemImg = lightningImg;
   else if (itemType === 'snow') itemImg = snowImg;
   let item = {
-    x: random(width),
+    x: random(GAME_W),
     y: 0,
     speed: random(0.5, 2),
     type: itemType,
@@ -379,7 +394,7 @@ function drawItemsAndCheckCollisions(simulate) {
       generateItem();
     }
     item.timer--;
-    if (item.timer <= 0 || item.y > height) {
+    if (item.timer <= 0 || item.y > GAME_H) {
       items.splice(i, 1);
       generateItem();
     }
@@ -387,7 +402,10 @@ function drawItemsAndCheckCollisions(simulate) {
 }
 
 function hitBtn(btn) {
-  return mouseX > btn.x && mouseX < btn.x + btn.w && mouseY > btn.y && mouseY < btn.y + btn.h;
+  const s = stageScale();
+  const mx = (mouseX - (width - GAME_W * s) / 2) / s;
+  const my = (mouseY - (height - GAME_H * s) / 2) / s;
+  return mx > btn.x && mx < btn.x + btn.w && my > btn.y && my < btn.y + btn.h;
 }
 
 function guideImage(type) {
@@ -505,7 +523,7 @@ function drawHowToPanel(mode) {
 function drawGuideOverlay() {
   noStroke();
   fill(8, 32, 58, 100);
-  rect(0, 0, width, height);
+  rect(0, 0, GAME_W, GAME_H);
   drawHowToPanel('resume');
 }
 
@@ -522,7 +540,7 @@ function drawHud() {
     drawPill(x, 14, 'Frozen', color(40, 90, 160), color(220, 238, 255, 230));
   }
 
-  helpBtn = { x: width - 84, y: 14, w: 68, h: 34 };
+  helpBtn = { x: GAME_W - 84, y: 14, w: 68, h: 34 };
   noStroke();
   fill(232, 140, 48);
   rect(helpBtn.x, helpBtn.y, helpBtn.w, helpBtn.h, 16);
